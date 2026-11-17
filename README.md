@@ -4,6 +4,8 @@ A terminal dashboard (TUI) for monitoring logs from local files, remote files ov
 
 The interface is available in **English** and **French**.
 
+![log-tui screenshot](docs/screenshot.png)
+
 ## Features
 
 - **Providers**: `local`, `sftp`, `ssh` (run a command and keep only new lines) and `http` (Range requests when supported).
