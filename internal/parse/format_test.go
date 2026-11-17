@@ -25,7 +25,7 @@ func sec(d Detail, title string) (Section, bool) {
 
 func TestMonologContextAndExtra(t *testing.T) {
 	d := Format(`[2026-11-04T10:11:12.123456+01:00] app.ERROR: Échec paiement {"order":42,"exception":{"class":"X"}} {"url":"/pay"}`)
-	if d.Kind != "monolog" || d.Level != "error" || hdr(d, "canal") != "app" || d.Message != "Échec paiement" {
+	if d.Kind != "monolog" || d.Level != "error" || hdr(d, "channel") != "app" || d.Message != "Échec paiement" {
 		t.Fatalf("%+v", d)
 	}
 	c, ok := sec(d, "context")
@@ -59,33 +59,33 @@ func TestMonologInlineJSONInMessage(t *testing.T) {
 	if d.Message != "got from api" {
 		t.Fatalf("message %q", d.Message)
 	}
-	if _, ok := sec(d, "JSON dans le message"); !ok {
+	if _, ok := sec(d, "inline"); !ok {
 		t.Fatalf("%+v", d.Sections)
 	}
 }
 
 func TestAccessCombined(t *testing.T) {
 	d := Format(`203.0.113.9 - bob [04/Nov/2026:10:11:12 +0100] "GET /api/x?y=1 HTTP/1.1" 502 153 "https://ex.com/" "curl/8.0"`)
-	if d.Kind != "access" || hdr(d, "statut") != "502" || hdr(d, "ip") != "203.0.113.9" ||
-		d.Level != "error" || hdr(d, "utilisateur") != "bob" || hdr(d, "user-agent") != "curl/8.0" || d.Message != "GET /api/x?y=1" {
+	if d.Kind != "access" || hdr(d, "status") != "502" || hdr(d, "ip") != "203.0.113.9" ||
+		d.Level != "error" || hdr(d, "user") != "bob" || hdr(d, "user-agent") != "curl/8.0" || d.Message != "GET /api/x?y=1" {
 		t.Fatalf("%+v", d)
 	}
 	d = Format(`10.0.0.1 - - [04/Nov/2026:10:11:12 +0100] "POST /login HTTP/1.1" 200 -`)
-	if d.Kind != "access" || hdr(d, "taille") != "-" || hdr(d, "utilisateur") != "" {
+	if d.Kind != "access" || hdr(d, "size") != "-" || hdr(d, "user") != "" {
 		t.Fatalf("common: %+v", d)
 	}
 }
 
 func TestSyslog(t *testing.T) {
 	d := Format(`Nov  4 10:11:12 web1 myapp[1234]: queue full {"len":99}`)
-	if d.Kind != "syslog" || hdr(d, "hôte") != "web1" || hdr(d, "programme") != "myapp" || hdr(d, "pid") != "1234" || d.Message != "queue full" {
+	if d.Kind != "syslog" || hdr(d, "host") != "web1" || hdr(d, "program") != "myapp" || hdr(d, "pid") != "1234" || d.Message != "queue full" {
 		t.Fatalf("%+v", d)
 	}
 	if _, ok := sec(d, "JSON"); !ok {
 		t.Fatal("JSON du message non extrait")
 	}
 	d = Format(`2026-11-04T10:11:12+0100 web1 sshd[99]: Accepted publickey for kevin`)
-	if d.Kind != "syslog" || hdr(d, "programme") != "sshd" || d.Message != "Accepted publickey for kevin" {
+	if d.Kind != "syslog" || hdr(d, "program") != "sshd" || d.Message != "Accepted publickey for kevin" {
 		t.Fatalf("journald: %+v", d)
 	}
 }
@@ -95,7 +95,7 @@ func TestLogfmt(t *testing.T) {
 	if d.Kind != "logfmt" || d.Level != "warn" || d.Message != "slow query" || hdr(d, "date") == "" {
 		t.Fatalf("%+v", d)
 	}
-	f, ok := sec(d, "champs")
+	f, ok := sec(d, "fields")
 	if !ok || len(f.Pairs) != 2 || f.Pairs[0].Key != "duration" {
 		t.Fatalf("%+v", d.Sections)
 	}

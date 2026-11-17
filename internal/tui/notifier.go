@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/scheduler"
 )
 
@@ -88,9 +89,9 @@ func (n *notifier) trySend(name string, cooldown time.Duration, now time.Time) (
 	delete(n.pending, name)
 	n.last[name] = now
 	title := fmt.Sprintf("log-tui · %s", name)
-	count := fmt.Sprintf("%d erreurs", p.n)
+	count := i18n.T("notif.errors", p.n)
 	if p.n == 1 {
-		count = "1 erreur"
+		count = i18n.T("notif.error1")
 	}
 	return &notifyPayload{Title: title, Body: count + " — " + p.sample}, 0
 }

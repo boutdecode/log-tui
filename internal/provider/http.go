@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/kevin/log-tui/internal/i18n"
 	"io"
 	"net/http"
 	"regexp"
@@ -66,7 +68,7 @@ func (h *HTTP) Fetch(ctx context.Context, st *State) ([]string, error) {
 		}
 		m := contentRangeRe.FindStringSubmatch(resp.Header.Get("Content-Range"))
 		if m == nil {
-			return nil, fmt.Errorf("Content-Range invalide: %q", resp.Header.Get("Content-Range"))
+			return nil, errors.New(i18n.T("err.contentrange", resp.Header.Get("Content-Range")))
 		}
 		first, _ := strconv.ParseInt(m[1], 10, 64)
 		skipPartial := !st.Init && first > 0

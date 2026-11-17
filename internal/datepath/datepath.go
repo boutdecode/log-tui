@@ -3,7 +3,9 @@
 package datepath
 
 import (
+	"errors"
 	"fmt"
+	"github.com/kevin/log-tui/internal/i18n"
 	"strings"
 	"time"
 )
@@ -44,7 +46,7 @@ func expand(p string, t time.Time) (string, error) {
 		}
 		i++
 		if i >= len(p) {
-			return "", fmt.Errorf("« %% » final dans %q (écrire %%%% pour un pourcentage littéral)", p)
+			return "", errors.New(i18n.T("err.datetrail", p))
 		}
 		switch p[i] {
 		case 'Y':
@@ -62,7 +64,7 @@ func expand(p string, t time.Time) (string, error) {
 		case '%':
 			b.WriteByte('%')
 		default:
-			return "", fmt.Errorf("directive %%%c inconnue dans %q (supportées : %%Y %%y %%m %%d %%H %%j %%%%)", p[i], p)
+			return "", errors.New(i18n.T("err.datedirective", string(p[i]), p))
 		}
 	}
 	return b.String(), nil

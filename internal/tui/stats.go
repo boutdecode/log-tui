@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/kevin/log-tui/internal/i18n"
 )
 
 var sparkChars = []rune("▁▂▃▄▅▆▇█")
@@ -29,9 +31,9 @@ func (m Model) statsLines(w int) []string {
 	if s.err != nil {
 		return []string{errStyle.Render(" " + s.err.Error())}
 	}
-	lines := []string{bold.Render(fmt.Sprintf(" Statistiques — %d entrées", s.total)), ""}
+	lines := []string{bold.Render(i18n.T("stats.title", s.total)), ""}
 
-	lines = append(lines, bold.Render(" Par niveau"))
+	lines = append(lines, bold.Render(" "+i18n.T("stats.bylevel")))
 	order := []string{"fatal", "error", "warn", "info", "debug", "trace", ""}
 	barW := max(10, min(50, w-30))
 	mx := 0
@@ -55,18 +57,18 @@ func (m Model) statsLines(w int) []string {
 			levelStyle(l).Render(strings.Repeat("█", n)), c))
 	}
 
-	lines = append(lines, "", bold.Render(" Activité"))
+	lines = append(lines, "", bold.Render(" "+i18n.T("stats.activity")))
 	if !s.from.IsZero() {
 		sp := sparkline(s.hist)
 		lines = append(lines, "  "+okStyle.Render(sp))
-		lines = append(lines, dim.Render(fmt.Sprintf("  %s → %s  (%d buckets de %s)",
+		lines = append(lines, dim.Render(i18n.T("stats.range",
 			s.from.Format("01-02 15:04:05"), s.to.Format("01-02 15:04:05"),
 			len(s.hist), (s.to.Sub(s.from)/time.Duration(max(1, len(s.hist)))).Round(100*time.Millisecond))))
 	} else {
-		lines = append(lines, dim.Render("  (aucune donnée)"))
+		lines = append(lines, dim.Render("  "+i18n.T("stats.nodata")))
 	}
 
-	lines = append(lines, "", bold.Render(" Messages les plus fréquents"))
+	lines = append(lines, "", bold.Render(" "+i18n.T("stats.top")))
 	for _, t := range s.top {
 		lines = append(lines, fmt.Sprintf("  %6d  %s", t.Count, clean(t.Msg)))
 	}

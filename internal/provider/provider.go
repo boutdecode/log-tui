@@ -5,7 +5,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
-	"fmt"
+	"errors"
+	"github.com/kevin/log-tui/internal/i18n"
 	"io"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func New(c config.Provider) (Provider, error) {
 	case "http":
 		return &HTTP{cfg: c}, nil
 	}
-	return nil, fmt.Errorf("type %q inconnu", c.Type)
+	return nil, errors.New(i18n.T("err.unknowntype", c.Type))
 }
 
 const (

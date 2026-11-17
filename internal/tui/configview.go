@@ -1,11 +1,11 @@
 package tui
 
 import (
-	"fmt"
 	"os"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/kevin/log-tui/internal/config"
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/scheduler"
 )
 
@@ -13,8 +13,8 @@ import (
 func (m *Model) openEditor() tea.Cmd {
 	data, err := os.ReadFile(m.cfgPath)
 	if err != nil {
-		data = config.Example() // fichier supprimé entre-temps : repartir de l'exemple
-		m.edMsg, m.edErr = "fichier illisible, exemple chargé: "+err.Error(), true
+		data = config.Example(i18n.Lang()) // fichier supprimé entre-temps : repartir de l'exemple
+		m.edMsg, m.edErr = i18n.T("cfg.unreadable", err), true
 		m.edSaved = ""
 	} else {
 		m.edMsg, m.edErr = "", false
@@ -35,7 +35,7 @@ func (m Model) onConfigKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case "esc":
 		if m.editor.Value() != m.edSaved && !m.edQuitArm {
 			m.edQuitArm = true
-			m.edMsg, m.edErr = "modifications non enregistrées : esc de nouveau pour les abandonner, ctrl+s pour enregistrer", true
+			m.edMsg, m.edErr = i18n.T("cfg.unsaved"), true
 			return m, nil
 		}
 		m.editor.Blur()
@@ -53,11 +53,11 @@ func (m Model) saveConfig() (tea.Model, tea.Cmd) {
 	text := m.editor.Value()
 	cfg, err := config.Parse([]byte(text))
 	if err != nil {
-		m.edMsg, m.edErr = "configuration invalide (non enregistrée): "+err.Error(), true
+		m.edMsg, m.edErr = i18n.T("cfg.invalid", err), true
 		return m, nil
 	}
 	if err := config.Save(m.cfgPath, []byte(text)); err != nil {
-		m.edMsg, m.edErr = "écriture: "+err.Error(), true
+		m.edMsg, m.edErr = i18n.T("cfg.write", err), true
 		return m, nil
 	}
 	m.edSaved = text
@@ -65,7 +65,7 @@ func (m Model) saveConfig() (tea.Model, tea.Cmd) {
 	// Reconstruire les providers avant de toucher à l'état courant.
 	newRun, err := scheduler.New(cfg, m.st)
 	if err != nil {
-		m.edMsg, m.edErr = "enregistrée, mais non appliquée: "+err.Error(), true
+		m.edMsg, m.edErr = i18n.T("cfg.notapplied", err), true
 		return m, nil
 	}
 	m.runCancel() // interrompt les récupérations de l'ancienne configuration
@@ -95,9 +95,9 @@ func (m Model) saveConfig() (tea.Model, tea.Cmd) {
 		}
 	}
 
-	note := fmt.Sprintf("enregistrée et appliquée (%d provider(s))", len(m.names))
+	note := i18n.T("cfg.applied", len(m.names))
 	if cfg.DB != m.cfg.DB {
-		note += " — le changement de « db » ne sera pris en compte qu'au redémarrage"
+		note += i18n.T("cfg.dbrestart")
 		cfg.DB = m.cfg.DB
 	}
 	m.cfg = cfg

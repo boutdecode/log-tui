@@ -1,0 +1,62 @@
+# log-tui configuration (~/.config/log-tui/config.yaml, or: log-tui -config ./config.yaml)
+# Uncomment and adapt the remote providers below.
+
+# SQLite database (default: ~/.local/share/log-tui/logs.db)
+# db: ~/.local/share/log-tui/logs.db
+
+# Purge entries older than this duration (absent = never)
+retention: 168h
+
+# Notification (notify-send, otherwise a terminal sequence) when new errors arrive
+# while the terminal is not focused. Under tmux: set -g focus-events on
+# notify: true
+# notify_cooldown: 10s   # minimum delay between two notifications for the same provider
+
+# By default a provider is NOT followed at startup: add "follow: true" to follow it,
+# or press "p" in the TUI to start/stop following it.
+providers:
+  # Provider enabled by default, to try the tool out (world-readable file on Debian/Ubuntu).
+  # Replace it with a file of your choice, e.g. /var/log/syslog.
+  - name: dpkg
+    type: local
+    path: /var/log/dpkg.log
+    interval: 10s
+    follow: true
+
+  # Remote file read over SFTP: only new bytes are transferred,
+  # rotation (truncation / new file) is detected.
+  # The path may contain the date (%Y %y %m %d %H %j), e.g. /var/log/api/prod-%Y-%m-%d.log:
+  # when the day changes, the end of the old file is read, then the new one is followed.
+  # A wildcard is also accepted (e.g. /var/log/api/file-*.log): the most recently modified
+  # matching file is followed (can be combined with the date: prod-%Y-%m-%d-*.log).
+  # "timezone: Europe/Paris" sets the timezone of the date (default: this machine's).
+  # - name: api-prod
+  #   type: sftp
+  #   host: prod-1            # ~/.ssh/config alias accepted (HostName, User, Port, IdentityFile)
+  #   user: deploy
+  #   # port: 22
+  #   # key: ~/.ssh/id_ed25519   # otherwise ssh-agent, then default keys
+  #   # password: ${PROD_PASSWORD}
+  #   # passphrase: ${KEY_PASSPHRASE}
+  #   # known_hosts: ~/.ssh/known_hosts
+  #   # insecure_host_key: false
+  #   path: /var/log/api/prod-%Y-%m-%d.log
+  #   # timezone: Europe/Paris
+  #   interval: 10s
+  #   # follow: true
+  #   initial_bytes: 2097152   # first fetch: the last 2 MiB
+
+  # Remote command: only lines that are new compared to the previous run are kept.
+  # - name: systemd
+  #   type: ssh
+  #   host: prod-1
+  #   command: journalctl -u api -n 500 --no-pager -o short-iso
+  #   interval: 15s
+
+  # File served over HTTP(S) (Range requests if the server supports them).
+  # - name: nginx-http
+  #   type: http
+  #   url: https://logs.example.com/nginx/error.log
+  #   headers:
+  #     Authorization: Bearer ${LOG_TOKEN}
+  #   interval: 30s

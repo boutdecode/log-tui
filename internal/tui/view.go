@@ -7,6 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/store"
 )
 
@@ -27,13 +28,13 @@ func (m Model) View() tea.View {
 		for i := range dl {
 			dl[i] = " " + dl[i]
 		}
-		body = panel("Détail", dl, m.w, bodyH, accent)
+		body = panel(i18n.T("detail.title"), dl, m.w, bodyH, accent)
 	case modeStats:
-		body = panel("Statistiques", m.statsLines(m.w-2), m.w, bodyH, accent)
+		body = panel(i18n.T("stats.panel"), m.statsLines(m.w-2), m.w, bodyH, accent)
 	case modeHelp:
-		body = panel("Aide", helpLines(), m.w, bodyH, accent)
+		body = panel(i18n.T("help.title"), helpLines(), m.w, bodyH, accent)
 	case modeConfig:
-		body = panel("Configuration · "+m.cfgPath, strings.Split(m.editor.View(), "\n"), m.w, bodyH, accent)
+		body = panel(i18n.T("config.title")+" · "+m.cfgPath, strings.Split(m.editor.View(), "\n"), m.w, bodyH, accent)
 	default:
 		body = m.logAndSide(bodyH)
 	}
@@ -71,30 +72,30 @@ func (m Model) View() tea.View {
 
 func (m Model) header() string {
 	chips := []string{brandSt.Render("◆ log-tui")}
-	n := fmt.Sprintf("%d entrées", m.total)
+	n := i18n.T("header.entries", m.total)
 	if len(m.rows) < m.total {
-		n += fmt.Sprintf(" · %d affichées", len(m.rows))
+		n += i18n.T("header.shown", len(m.rows))
 	}
 	chips = append(chips, chipSt.Render(n))
 	if m.sel > 0 {
-		chips = append(chips, chipProv.Render("provider: "+m.names[m.sel-1]))
+		chips = append(chips, chipProv.Render(i18n.T("header.provider")+" "+m.names[m.sel-1]))
 	}
 	if m.levelIdx > 0 {
-		chips = append(chips, chipLevel.Render("niveau "+levelPresets[m.levelIdx].label))
+		chips = append(chips, chipLevel.Render(i18n.T("header.level")+" "+levelPresets()[m.levelIdx].label))
 	}
 	if m.queryStr != "" {
-		chips = append(chips, chipWarn.Render("filtre actif"))
+		chips = append(chips, chipWarn.Render(i18n.T("header.filter")))
 	}
 	switch {
 	case m.mode == modeConfig && m.editor.Value() != m.edSaved:
-		chips = append(chips, chipWarn.Render("● modifié"))
+		chips = append(chips, chipWarn.Render(i18n.T("header.modified")))
 	case m.mode == modeDetail:
 		chips = append(chips, chipSt.Render(fmt.Sprintf("%d/%d", m.cursor+1, len(m.rows))))
 	}
 	if m.follow {
-		chips = append(chips, chipLive.Render("▼ suivi"))
+		chips = append(chips, chipLive.Render(i18n.T("header.follow")))
 	} else {
-		chips = append(chips, chipPause.Render("⏸ figé · f"))
+		chips = append(chips, chipPause.Render(i18n.T("header.frozen")))
 	}
 	line := strings.Join(chips, barStyle.Render(" "))
 	if pad := m.w - lipgloss.Width(line); pad > 0 {
@@ -116,7 +117,7 @@ func (m Model) footer() string {
 	case m.mode == modeSearch:
 		return m.input.View()
 	case m.loadErr != nil:
-		return errStyle.Render("recherche: " + m.loadErr.Error())
+		return errStyle.Render(i18n.T("footer.search") + " " + m.loadErr.Error())
 	}
 	// Première erreur de provider pertinente.
 	for _, n := range m.names {
@@ -128,26 +129,26 @@ func (m Model) footer() string {
 		}
 	}
 	if m.queryStr != "" {
-		return warnSt.Render("filtre: ") + m.queryStr + dim.Render("   (esc: effacer)")
+		return warnSt.Render(i18n.T("footer.filter")+" ") + m.queryStr + dim.Render("   "+i18n.T("footer.clear"))
 	}
 	if m.mode != modeLog {
 		return ""
 	}
-	return dim.Render("/ pour rechercher")
+	return dim.Render(i18n.T("footer.hint"))
 }
 
 func (m Model) hints() string {
 	switch m.mode {
 	case modeSearch:
-		return "enter: appliquer · esc: annuler"
+		return i18n.T("hints.search")
 	case modeDetail:
-		return "↑↓/pgup/pgdn: défiler · ←→: entrée précédente/suivante · esc: retour"
+		return i18n.T("hints.detail")
 	case modeConfig:
-		return "ctrl+s: enregistrer et appliquer · esc: fermer"
+		return i18n.T("hints.config")
 	case modeStats, modeHelp:
-		return "esc: retour"
+		return i18n.T("hints.back")
 	}
-	return "/ chercher · tab providers · enter détail · l niveau · f suivre · r rafraîchir · p suivre/pause · s stats · c config · ? aide · q quitter"
+	return i18n.T("hints.default")
 }
 
 // logAndSide compose la sidebar (si la place le permet) et la liste de logs, chacune dans son cadre.
@@ -160,13 +161,13 @@ func (m Model) logAndSide(h int) []string {
 		if m.side {
 			sc = accent
 		}
-		side = panel("Providers", m.sidebar(sideWidth-2, h-2), sideWidth, h, sc)
+		side = panel(i18n.T("side.title"), m.sidebar(sideWidth-2, h-2), sideWidth, h, sc)
 	}
 	lc := accent
 	if m.side && side != nil {
 		lc = borderIdle
 	}
-	ttl := "Logs"
+	ttl := i18n.T("logs.title")
 	if m.queryStr != "" {
 		ttl += " · " + m.queryStr
 	}
@@ -184,11 +185,11 @@ func (m Model) logAndSide(h int) []string {
 func (m Model) logLines(w, h int) []string {
 	out := make([]string, h)
 	if len(m.rows) == 0 {
-		msg := "aucune entrée"
+		msg := i18n.T("empty.none")
 		if m.total == 0 && m.queryStr == "" && m.sel == 0 && m.levelIdx == 0 {
-			msg = "en attente des premiers logs…"
+			msg = i18n.T("empty.waiting")
 			if m.noneFollowed() {
-				msg = "aucun provider suivi : choisissez-en un (tab, ↑/↓) puis p pour démarrer son suivi"
+				msg = i18n.T("empty.nofollow")
 			}
 		}
 		out[0] = dim.Render(" " + msg)
@@ -275,7 +276,7 @@ func (m Model) sidebar(w, h int) []string {
 		}
 		lines = append(lines, line)
 	}
-	add(0, " ", "tous", total)
+	add(0, " ", i18n.T("side.all"), total)
 	for i, n := range m.names {
 		add(i+1, m.dot(n), n, m.counts[n])
 	}
@@ -284,18 +285,18 @@ func (m Model) sidebar(w, h int) []string {
 		n := m.names[m.sel-1]
 		s := m.status[n]
 		lines = append(lines, "", bold.Render(" "+n), dim.Render(" "+m.run.Kind(n)))
-		lines = append(lines, dim.Render(fmt.Sprintf(" toutes les %s", m.run.Interval(n))))
+		lines = append(lines, dim.Render(i18n.T("side.every", m.run.Interval(n))))
 		switch {
 		case s.paused && s.last.IsZero():
-			lines = append(lines, dim.Render(" non suivi · p: suivre"))
+			lines = append(lines, dim.Render(i18n.T("side.notfollowed")))
 		case s.paused:
-			lines = append(lines, warnSt.Render(" en pause · p: reprendre"))
+			lines = append(lines, warnSt.Render(i18n.T("side.paused")))
 		case s.fetching:
-			lines = append(lines, warnSt.Render(" récupération…"))
+			lines = append(lines, warnSt.Render(i18n.T("side.fetching")))
 		case !s.last.IsZero():
-			lines = append(lines, dim.Render(fmt.Sprintf(" dernier: il y a %s (%s)", ago(s.last), s.dur.Round(time.Millisecond))))
+			lines = append(lines, dim.Render(i18n.T("side.last", ago(s.last), s.dur.Round(time.Millisecond))))
 		}
-		lines = append(lines, dim.Render(fmt.Sprintf(" +%d depuis le lancement", s.added)))
+		lines = append(lines, dim.Render(i18n.T("side.added", s.added)))
 		if s.err != nil {
 			for _, l := range wrap(clean(s.err.Error()), w-2) {
 				lines = append(lines, errStyle.Render(" "+l))
@@ -370,33 +371,34 @@ func wrap(s string, w int) []string {
 func ansiPlain(s string) string { return clean(s) }
 
 func helpLines() []string {
+	t := i18n.T
 	return []string{
-		bold.Render(" Raccourcis"),
+		bold.Render(" " + t("help.keys")),
 		"",
-		"  ↑/↓ j/k        naviguer           pgup/pgdn  demi-page",
-		"  g / G          début / fin        f          suivre les nouveaux logs",
-		"  enter          détail (JSON décodé, ←/→ entrée suivante)",
-		"  tab            focus liste des providers (↑/↓ pour filtrer)",
-		"  /              rechercher         esc        effacer le filtre",
-		"  l              filtre de niveau (tous → ≥error → ≥warn → ≥info)",
-		"  r              rafraîchir tout    p          suivre / mettre en pause (provider sélectionné)",
-		"  s              statistiques       c          éditer la configuration",
-		"  q              quitter",
+		"  ↑/↓ j/k        " + t("help.nav"),
+		"  g / G          " + t("help.topbottom"),
+		"  enter          " + t("help.enter"),
+		"  tab            " + t("help.tab"),
+		"  /              " + t("help.search"),
+		"  l              " + t("help.level"),
+		"  r              " + t("help.refresh"),
+		"  s              " + t("help.stats"),
+		"  q              " + t("help.quit"),
 		"",
-		bold.Render(" Notifications"),
+		bold.Render(" " + t("help.notif")),
 		"",
-		"  Les nouvelles erreurs (error/fatal) déclenchent une notification quand le terminal",
-		"  n'a pas le focus (notify-send, sinon séquence du terminal). Options : notify,",
-		"  notify_cooldown. Sous tmux : set -g focus-events on",
+		"  " + t("help.notif1"),
+		"  " + t("help.notif2"),
+		"  " + t("help.notif3"),
 		"",
-		bold.Render(" Langage de recherche"),
+		bold.Render(" " + t("help.query")),
 		"",
-		"  timeout               sous-chaîne (insensible à la casse)",
-		`  "connection reset"    phrase`,
-		"  -healthcheck          exclure",
-		"  level:error,warn      niveau(x)",
-		"  provider:api          source",
-		"  since:15m             fenêtre de temps (s, m, h, d)",
-		"  user.id:42            sous-chaîne dans un champ JSON (chemin pointé)",
+		"  timeout               " + t("help.q.substr"),
+		`  "connection reset"    ` + t("help.q.phrase"),
+		"  -healthcheck          " + t("help.q.exclude"),
+		"  level:error,warn      " + t("help.q.level"),
+		"  provider:api          " + t("help.q.provider"),
+		"  since:15m             " + t("help.q.since"),
+		"  user.id:42            " + t("help.q.field"),
 	}
 }

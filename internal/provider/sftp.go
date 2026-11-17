@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/kevin/log-tui/internal/i18n"
 	"io"
 	"sync"
 	"time"
@@ -106,7 +108,7 @@ func (s *SFTP) fetch(st *State) ([]string, error) {
 				}
 			}
 			if best == "" {
-				return "", fmt.Errorf("aucun fichier ne correspond à %s", pattern)
+				return "", errors.New(i18n.T("err.nomatch", pattern))
 			}
 			return best, nil
 		},

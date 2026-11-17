@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/parse"
 )
 
@@ -33,7 +34,7 @@ func statusStyle(code string) lipgloss.Style {
 // qui a été extrait à l'ingestion.
 func (m *Model) refreshDetail() {
 	if m.cursor < 0 || m.cursor >= len(m.rows) {
-		m.detail.SetContent(dim.Render("(aucune entrée)"))
+		m.detail.SetContent(dim.Render("(" + i18n.T("empty.none") + ")"))
 		return
 	}
 	r := m.rows[m.cursor]
@@ -63,7 +64,7 @@ func (m *Model) refreshDetail() {
 		b.WriteString("\n" + bold.Render(clean(d.Message)) + "\n")
 	}
 	for _, s := range d.Sections {
-		b.WriteString("\n" + sectionSt.Render("── "+s.Title+" ──") + "\n")
+		b.WriteString("\n" + sectionSt.Render("── "+i18n.Or("sec."+s.Title, s.Title)+" ──") + "\n")
 		switch {
 		case s.JSON != "":
 			if pretty, ok := prettyJSON(s.JSON); ok {
@@ -87,16 +88,19 @@ func (m *Model) refreshDetail() {
 func writePairs(b *strings.Builder, kvs []parse.KV) {
 	w := 0
 	for _, kv := range kvs {
-		w = max(w, lipgloss.Width(kv.Key))
+		w = max(w, lipgloss.Width(hdrKey(kv.Key)))
 	}
 	for _, kv := range kvs {
 		val := clean(kv.Value)
 		switch kv.Key {
-		case "statut":
+		case "status":
 			val = statusStyle(kv.Value).Render(val)
-		case "niveau":
+		case "level":
 			val = levelStyle(parse.NormLevel(kv.Value)).Render(val)
 		}
-		b.WriteString(jKey.Render(fit(kv.Key, w)) + "  " + val + "\n")
+		b.WriteString(jKey.Render(fit(hdrKey(kv.Key), w)) + "  " + val + "\n")
 	}
 }
+
+// hdrKey traduit les clés d'en-tête connues du parseur ; les autres sont gardées telles quelles.
+func hdrKey(k string) string { return i18n.Or("hdr."+k, k) }

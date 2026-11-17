@@ -3,6 +3,7 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/kevin/log-tui/internal/datepath"
+	"github.com/kevin/log-tui/internal/i18n"
 
 	"gopkg.in/yaml.v3"
 )
@@ -58,11 +60,19 @@ type Config struct {
 	Providers      []Provider    `yaml:"providers"`
 }
 
-//go:embed example.yaml
-var exampleYAML []byte
+//go:embed example.fr.yaml
+var exampleFR []byte
 
-// Example retourne la configuration d'exemple.
-func Example() []byte { return exampleYAML }
+//go:embed example.en.yaml
+var exampleEN []byte
+
+// Example retourne la configuration d'exemple dans la langue donnée (fr, sinon en).
+func Example(lang string) []byte {
+	if lang == i18n.FR {
+		return exampleFR
+	}
+	return exampleEN
+}
 
 // EnsureExists crée le fichier avec la configuration d'exemple s'il n'existe pas.
 // Retourne true si le fichier vient d'être créé.
@@ -81,7 +91,7 @@ func EnsureExists(path string) (bool, error) {
 		return false, err
 	}
 	defer f.Close()
-	_, err = f.Write(exampleYAML)
+	_, err = f.Write(Example(i18n.Lang()))
 	return err == nil, err
 }
 
@@ -190,16 +200,16 @@ func (c *Config) normalize() error {
 		c.NotifyCooldown = 10 * time.Second
 	}
 	if len(c.Providers) == 0 {
-		return fmt.Errorf("aucun provider défini")
+		return errors.New(i18n.T("cfgerr.noprovider"))
 	}
 	seen := map[string]bool{}
 	for i := range c.Providers {
 		p := &c.Providers[i]
 		if p.Name == "" {
-			return fmt.Errorf("providers[%d]: name requis", i)
+			return errors.New(i18n.T("cfgerr.noname", i))
 		}
 		if seen[p.Name] {
-			return fmt.Errorf("provider %q défini deux fois", p.Name)
+			return errors.New(i18n.T("cfgerr.dup", p.Name))
 		}
 		seen[p.Name] = true
 		if p.Interval <= 0 {
@@ -217,37 +227,37 @@ func (c *Config) normalize() error {
 		}
 		if p.Timezone != "" {
 			if _, err := time.LoadLocation(p.Timezone); err != nil {
-				return fmt.Errorf("provider %q: timezone %q invalide: %w", p.Name, p.Timezone, err)
+				return fmt.Errorf("%s: %w", i18n.T("cfgerr.tz", p.Name, p.Timezone), err)
 			}
 		}
 		if (p.Type == "sftp" || p.Type == "local") && p.Path != "" {
 			if err := datepath.Check(p.Path); err != nil {
-				return fmt.Errorf("provider %q: path: %w", p.Name, err)
+				return fmt.Errorf("%s: %w", i18n.T("cfgerr.path", p.Name), err)
 			}
 			if _, err := filepath.Match(p.Path, ""); err != nil {
-				return fmt.Errorf("provider %q: path: motif invalide %q: %w", p.Name, p.Path, err)
+				return fmt.Errorf("%s: %w", i18n.T("cfgerr.pattern", p.Name, p.Path), err)
 			}
 		}
 		switch p.Type {
 		case "sftp":
 			if p.Host == "" || p.Path == "" {
-				return fmt.Errorf("provider %q: host et path requis", p.Name)
+				return errors.New(i18n.T("cfgerr.hostpath", p.Name))
 			}
 		case "ssh":
 			if p.Host == "" || p.Command == "" {
-				return fmt.Errorf("provider %q: host et command requis", p.Name)
+				return errors.New(i18n.T("cfgerr.hostcmd", p.Name))
 			}
 		case "http":
 			if p.URL == "" {
-				return fmt.Errorf("provider %q: url requis", p.Name)
+				return errors.New(i18n.T("cfgerr.url", p.Name))
 			}
 		case "local":
 			if p.Path == "" {
-				return fmt.Errorf("provider %q: path requis", p.Name)
+				return errors.New(i18n.T("cfgerr.pathreq", p.Name))
 			}
 			p.Path = ExpandPath(p.Path)
 		default:
-			return fmt.Errorf("provider %q: type %q inconnu (sftp|ssh|http|local)", p.Name, p.Type)
+			return errors.New(i18n.T("cfgerr.type", p.Name, p.Type))
 		}
 	}
 	return nil

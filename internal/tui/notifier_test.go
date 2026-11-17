@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/scheduler"
 )
 
@@ -88,5 +89,16 @@ func TestNotifierFocusClearsPendingAndResetReseeds(t *testing.T) {
 	n.reset()
 	if p, _ := n.onFetch(fm("api", 4, "hist"), false, cd, t0.Add(time.Minute)); p != nil {
 		t.Fatal("après reset, l'historique est de nouveau ignoré")
+	}
+}
+
+func TestNotifierBodyEnglish(t *testing.T) {
+	_ = i18n.Set(i18n.EN)
+	defer i18n.Set(i18n.FR)
+	n := newNotifier()
+	n.pending["api"] = pendingErrs{n: 2, sample: "boom"}
+	p, _ := n.trySend("api", 0, time.Now())
+	if p == nil || p.Body != "2 errors — boom" {
+		t.Fatalf("%+v", p)
 	}
 }

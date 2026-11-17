@@ -179,7 +179,7 @@ func formatJSONLine(line string) (Detail, bool) {
 		if v, ok := pick(obj, levelKeys); ok {
 			if l := toLevel(v); l != "" {
 				d.Level = l
-				d.Header = append(d.Header, KV{"niveau", l})
+				d.Header = append(d.Header, KV{"level", l})
 			}
 		}
 		if v, ok := pick(obj, msgKeys); ok {
@@ -203,7 +203,7 @@ func formatMonolog(line string) (Detail, bool) {
 		return Detail{}, false
 	}
 	d := Detail{Kind: "monolog", Level: level, Header: []KV{
-		{"date", m[1]}, {"canal", m[2]}, {"niveau", strings.ToUpper(m[3])},
+		{"date", m[1]}, {"channel", m[2]}, {"level", strings.ToUpper(m[3])},
 	}}
 	rest := m[4]
 
@@ -234,7 +234,7 @@ func formatMonolog(line string) (Detail, bool) {
 	}
 	text, inline := splitInlineJSON(msgText)
 	for i := range inline {
-		inline[i].Title = "JSON dans le message"
+		inline[i].Title = "inline"
 	}
 	d.Message = text
 	d.Sections = append(d.Sections, inline...)
@@ -259,13 +259,13 @@ func formatAccess(line string) (Detail, bool) {
 	}
 	d.Header = append(d.Header, KV{"ip", m[1]})
 	if m[3] != "-" {
-		d.Header = append(d.Header, KV{"utilisateur", m[3]})
+		d.Header = append(d.Header, KV{"user", m[3]})
 	}
-	d.Header = append(d.Header, KV{"date", m[4]}, KV{"méthode", m[5]})
+	d.Header = append(d.Header, KV{"date", m[4]}, KV{"method", m[5]})
 	if m[7] != "" {
-		d.Header = append(d.Header, KV{"protocole", m[7]})
+		d.Header = append(d.Header, KV{"protocol", m[7]})
 	}
-	d.Header = append(d.Header, KV{"statut", m[8]}, KV{"taille", m[9]})
+	d.Header = append(d.Header, KV{"status", m[8]}, KV{"size", m[9]})
 	if m[10] != "" && m[10] != "-" {
 		d.Header = append(d.Header, KV{"referer", m[10]})
 	}
@@ -273,7 +273,7 @@ func formatAccess(line string) (Detail, bool) {
 		d.Header = append(d.Header, KV{"user-agent", m[11]})
 	}
 	if extra := strings.TrimSpace(m[12]); extra != "" {
-		d.Header = append(d.Header, KV{"suite", extra})
+		d.Header = append(d.Header, KV{"rest", extra})
 	}
 	return d, true
 }
@@ -288,7 +288,7 @@ func formatSyslog(line string) (Detail, bool) {
 	if m == nil {
 		return Detail{}, false
 	}
-	d := Detail{Kind: "syslog", Header: []KV{{"date", m[1]}, {"hôte", m[2]}, {"programme", m[3]}}}
+	d := Detail{Kind: "syslog", Header: []KV{{"date", m[1]}, {"host", m[2]}, {"program", m[3]}}}
 	if m[4] != "" {
 		d.Header = append(d.Header, KV{"pid", m[4]})
 	}
@@ -366,7 +366,7 @@ func formatLogfmt(line string) (Detail, bool) {
 		case inList(key, tsKeys) && d.Header == nil:
 			d.Header = append(d.Header, KV{"date", val})
 		case inList(key, levelKeys):
-			d.Header = append(d.Header, KV{"niveau", val})
+			d.Header = append(d.Header, KV{"level", val})
 			d.Level = NormLevel(val)
 		case inList(key, msgKeys) && d.Message == "":
 			d.Message = val
@@ -379,7 +379,7 @@ func formatLogfmt(line string) (Detail, bool) {
 		}
 	}
 	if len(pairs) > 0 {
-		d.Sections = append([]Section{{Title: "champs", Pairs: pairs}}, d.Sections...)
+		d.Sections = append([]Section{{Title: "fields", Pairs: pairs}}, d.Sections...)
 	}
 	return d, true
 }
@@ -407,7 +407,7 @@ func formatFallback(line string) Detail {
 	if lvlLoc != nil {
 		d.Level = NormLevel(text[lvlLoc[0]:lvlLoc[1]])
 		if d.Level != "" {
-			d.Header = append(d.Header, KV{"niveau", d.Level})
+			d.Header = append(d.Header, KV{"level", d.Level})
 		}
 	}
 	if tsLoc != nil || lvlLoc != nil {

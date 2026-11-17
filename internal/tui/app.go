@@ -11,6 +11,7 @@ import (
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"github.com/kevin/log-tui/internal/config"
+	"github.com/kevin/log-tui/internal/i18n"
 	"github.com/kevin/log-tui/internal/notify"
 	"github.com/kevin/log-tui/internal/query"
 	"github.com/kevin/log-tui/internal/scheduler"
@@ -30,14 +31,19 @@ const (
 	modeConfig
 )
 
-var levelPresets = []struct {
+type levelPreset struct {
 	label  string
 	levels []string
-}{
-	{"tous", nil},
-	{"≥error", []string{"error", "fatal"}},
-	{"≥warn", []string{"warn", "error", "fatal"}},
-	{"≥info", []string{"info", "warn", "error", "fatal"}},
+}
+
+// levelPresets est une fonction : le libellé « tous » dépend de la langue.
+func levelPresets() []levelPreset {
+	return []levelPreset{
+		{i18n.T("level.all"), nil},
+		{"≥error", []string{"error", "fatal"}},
+		{"≥warn", []string{"warn", "error", "fatal"}},
+		{"≥info", []string{"info", "warn", "error", "fatal"}},
+	}
 }
 
 type pstatus struct {
@@ -120,7 +126,7 @@ type Model struct {
 func New(ctx context.Context, run *scheduler.Runner, st *store.Store, cfgPath string, cfg *config.Config, opts Options) Model {
 	ti := textinput.New()
 	ti.Prompt = "/ "
-	ti.Placeholder = `texte  "phrase"  -exclu  level:error  provider:api  since:1h  user.id:42`
+	ti.Placeholder = i18n.T("search.placeholder")
 	vp := viewport.New(viewport.WithWidth(80), viewport.WithHeight(20))
 	vp.SoftWrap = true
 
@@ -169,7 +175,7 @@ func (m Model) effective() query.Query {
 		q.Provider = m.names[m.sel-1]
 	}
 	if len(q.Levels) == 0 {
-		q.Levels = levelPresets[m.levelIdx].levels
+		q.Levels = levelPresets()[m.levelIdx].levels
 	}
 	return q
 }
@@ -495,7 +501,7 @@ func (m Model) onKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, m.load()
 		}
 	case "l":
-		m.levelIdx = (m.levelIdx + 1) % len(levelPresets)
+		m.levelIdx = (m.levelIdx + 1) % len(levelPresets())
 		m.follow = true
 		return m, m.load()
 	case "r":

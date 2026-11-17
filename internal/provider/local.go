@@ -2,7 +2,8 @@ package provider
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"github.com/kevin/log-tui/internal/i18n"
 	"io"
 	"os"
 	"path/filepath"
@@ -46,7 +47,7 @@ func newestLocal(pattern string) (string, error) {
 		}
 	}
 	if best == "" {
-		return "", fmt.Errorf("aucun fichier ne correspond à %s", pattern)
+		return "", errors.New(i18n.T("err.nomatch", pattern))
 	}
 	return best, nil
 }

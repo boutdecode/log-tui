@@ -3,7 +3,9 @@ package sshutil
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/kevin/log-tui/internal/i18n"
 	"net"
 	"os"
 	"path/filepath"
@@ -86,7 +88,7 @@ func authMethods(p config.Provider, keyFile string) ([]ssh.AuthMethod, error) {
 			if _, err := os.Stat(priv); err == nil {
 				keyFile = priv
 			} else {
-				return nil, fmt.Errorf("clé %s: c'est une clé publique et la clé privée %s est introuvable", keyFile, priv)
+				return nil, errors.New(i18n.T("err.pubkey", keyFile, priv))
 			}
 		}
 		files = []string{keyFile}
@@ -100,21 +102,21 @@ func authMethods(p config.Provider, keyFile string) ([]ssh.AuthMethod, error) {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			if keyFile != "" {
-				return nil, fmt.Errorf("clé %s: %w", f, err)
+				return nil, fmt.Errorf("%s: %w", i18n.T("err.key", f), err)
 			}
 			continue
 		}
 		s, err := ssh.ParsePrivateKey(data)
 		if _, ok := err.(*ssh.PassphraseMissingError); ok {
 			if p.Passphrase == "" {
-				err = fmt.Errorf("clé protégée par une passphrase : renseignez « passphrase » ou chargez-la dans ssh-agent")
+				err = errors.New(i18n.T("err.passphrase"))
 			} else {
 				s, err = ssh.ParsePrivateKeyWithPassphrase(data, []byte(p.Passphrase))
 			}
 		}
 		if err != nil {
 			if keyFile != "" {
-				return nil, fmt.Errorf("clé %s: %w", f, err)
+				return nil, fmt.Errorf("%s: %w", i18n.T("err.key", f), err)
 			}
 			continue
 		}
@@ -132,7 +134,7 @@ func authMethods(p config.Provider, keyFile string) ([]ssh.AuthMethod, error) {
 		methods = append(methods, ssh.Password(p.Password))
 	}
 	if len(methods) == 0 {
-		return nil, fmt.Errorf("aucune méthode d'authentification disponible (key, agent ou password)")
+		return nil, errors.New(i18n.T("err.noauth"))
 	}
 	return methods, nil
 }
@@ -151,7 +153,7 @@ func hostKeyCallback(p config.Provider) (ssh.HostKeyCallback, error) {
 	}
 	cb, err := knownhosts.New(file)
 	if err != nil {
-		return nil, fmt.Errorf("known_hosts %s: %w (ou insecure_host_key: true)", file, err)
+		return nil, fmt.Errorf("%s: %w %s", "known_hosts "+file, err, i18n.T("err.orinsecure"))
 	}
 	return cb, nil
 }
