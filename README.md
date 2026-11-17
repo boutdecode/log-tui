@@ -21,6 +21,18 @@ The interface is available in **English** and **French**.
 
 ## Installation
 
+Quick install (Linux and macOS, amd64 and arm64):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/boutdecode/log-tui/main/install.sh | bash
+```
+
+The script installs the latest release into `/usr/local/bin` (if writable) or `~/.local/bin`, and verifies its checksum. Set `LOG_TUI_VERSION=v1.0.0` to pin a version or `LOG_TUI_INSTALL_DIR=/some/dir` to choose the target. If no release exists yet, it builds from source (`git` and Go required).
+
+Releases are built by GitHub Actions when a `v*` tag is pushed.
+
+### From source
+
 Requires Go (see `go.mod` for the minimum version).
 
 ```sh
