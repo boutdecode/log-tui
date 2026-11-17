@@ -1,0 +1,62 @@
+# Configuration de log-tui (~/.config/log-tui/config.yaml, ou: log-tui -config ./config.yaml)
+# Décommentez et adaptez les providers distants ci-dessous.
+
+# Base SQLite (défaut: ~/.local/share/log-tui/logs.db)
+# db: ~/.local/share/log-tui/logs.db
+
+# Purge des entrées plus vieilles que cette durée (absent = jamais)
+retention: 168h
+
+# Notification (notify-send, sinon séquence du terminal) quand de nouvelles erreurs arrivent
+# alors que le terminal n'a pas le focus. Sous tmux : set -g focus-events on
+# notify: true
+# notify_cooldown: 10s   # délai minimum entre deux notifications d'un même provider
+
+# Par défaut un provider n'est PAS suivi au lancement : ajoutez « follow: true » pour qu'il le soit,
+# ou appuyez sur « p » dans la TUI pour démarrer/arrêter son suivi.
+providers:
+  # Provider actif par défaut, pour essayer l'outil (fichier lisible par tous sous Debian/Ubuntu).
+  # Remplacez-le par un fichier de votre choix, par ex. /var/log/syslog.
+  - name: dpkg
+    type: local
+    path: /var/log/dpkg.log
+    interval: 10s
+    follow: true
+
+  # Fichier distant lu par SFTP : seuls les octets nouveaux sont transférés,
+  # la rotation (troncature / nouveau fichier) est détectée.
+  # Le chemin peut contenir la date (%Y %y %m %d %H %j), ex. /var/log/api/prod-%Y-%m-%d.log :
+  # au changement de jour, la fin de l'ancien fichier est lue puis le nouveau est suivi.
+  # Un joker est aussi accepté (ex. /var/log/api/file-*.log) : le fichier correspondant modifié
+  # le plus récemment est suivi (combinable avec la date : prod-%Y-%m-%d-*.log).
+  # "timezone: Europe/Paris" fixe le fuseau de la date (défaut : celui de ce poste).
+  # - name: api-prod
+  #   type: sftp
+  #   host: prod-1            # alias de ~/.ssh/config accepté (HostName, User, Port, IdentityFile)
+  #   user: deploy
+  #   # port: 22
+  #   # key: ~/.ssh/id_ed25519   # sinon ssh-agent puis clés par défaut
+  #   # password: ${PROD_PASSWORD}
+  #   # passphrase: ${KEY_PASSPHRASE}
+  #   # known_hosts: ~/.ssh/known_hosts
+  #   # insecure_host_key: false
+  #   path: /var/log/api/prod-%Y-%m-%d.log
+  #   # timezone: Europe/Paris
+  #   interval: 10s
+  #   # follow: true
+  #   initial_bytes: 2097152   # 1re récupération : les 2 derniers Mo
+
+  # Commande distante : seules les lignes nouvelles par rapport au tour précédent sont gardées.
+  # - name: systemd
+  #   type: ssh
+  #   host: prod-1
+  #   command: journalctl -u api -n 500 --no-pager -o short-iso
+  #   interval: 15s
+
+  # Fichier exposé en HTTP(S) (Range si supporté par le serveur).
+  # - name: nginx-http
+  #   type: http
+  #   url: https://logs.example.com/nginx/error.log
+  #   headers:
+  #     Authorization: Bearer ${LOG_TOKEN}
+  #   interval: 30s
